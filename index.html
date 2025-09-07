@@ -93,7 +93,9 @@
 <body>
   <div class="container">
     <h1>❤️ Heart Disease Predictor</h1>
-    <form method="POST">
+
+    <!-- ✅ FIXED: added action="/predict" -->
+    <form action="/predict" method="POST">
       <label>Age <input name="Age" type="number" step="1" required></label>
       <label>Sex
         <select name="Sex" required>

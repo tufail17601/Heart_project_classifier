@@ -5,7 +5,7 @@ import pandas as pd
 
 app = Flask(__name__)
 
-# Categorical → Numeric mappings
+# Mappings
 SEX_MAP    = {'M': 1, 'F': 0}
 CP_MAP     = {'TA': 0, 'ATA': 1, 'NAP': 2, 'ASY': 3}
 ECG_MAP    = {'Normal': 0, 'ST': 1, 'LVH': 2}
@@ -22,53 +22,59 @@ FEATURE_COLUMNS = [
 with open('Heart_Project.pkl', 'rb') as f:
     model = pickle.load(f)
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    prediction = None
+# ---------------- ROUTES ---------------- #
 
-    if request.method == 'POST':
-        try:
-            # Extract form inputs
-            age         = float(request.form['Age'])
-            sex_raw     = request.form['Sex']
-            cp_raw      = request.form['ChestPainType']
-            resting_bp  = float(request.form['RestingBP'])
-            chol        = float(request.form['Cholesterol'])
-            fasting_bs  = float(request.form['FastingBS'])
-            ecg_raw     = request.form['RestingECG']
-            max_hr      = float(request.form['MaxHR'])
-            angina_raw  = request.form['ExerciseAngina']
-            oldpeak     = float(request.form['Oldpeak'])
-            slope_raw   = request.form['ST_Slope']  # ✅ Fixed typo here
+@app.route('/')
+def home():
+    return render_template('index.html')
 
-            # Map categoricals
-            sex     = SEX_MAP.get(sex_raw)
-            cp      = CP_MAP.get(cp_raw)
-            ecg     = ECG_MAP.get(ecg_raw)
-            angina  = ANGINA_MAP.get(angina_raw)
-            slope   = SLOPE_MAP.get(slope_raw)
+@app.route('/predict', methods=['POST'])
+def predict():
+    try:
+        # Extract form inputs
+        age         = float(request.form['Age'])
+        sex_raw     = request.form['Sex']
+        cp_raw      = request.form['ChestPainType']
+        resting_bp  = float(request.form['RestingBP'])
+        chol        = float(request.form['Cholesterol'])
+        fasting_bs  = float(request.form['FastingBS'])
+        ecg_raw     = request.form['RestingECG']
+        max_hr      = float(request.form['MaxHR'])
+        angina_raw  = request.form['ExerciseAngina']
+        oldpeak     = float(request.form['Oldpeak'])
+        slope_raw   = request.form['ST_Slope']
 
-            # Build DataFrame
-            feature_values = [
-                age, sex, cp, resting_bp, chol,
-                fasting_bs, ecg, max_hr, angina,
-                oldpeak, slope
-            ]
-            X_df = pd.DataFrame([feature_values], columns=FEATURE_COLUMNS)
+        # Map categoricals
+        sex     = SEX_MAP.get(sex_raw)
+        cp      = CP_MAP.get(cp_raw)
+        ecg     = ECG_MAP.get(ecg_raw)
+        angina  = ANGINA_MAP.get(angina_raw)
+        slope   = SLOPE_MAP.get(slope_raw)
 
-            # Predict
-            pred_prob  = model.predict_proba(X_df)[0, 1]
-            pred_class = model.predict(X_df)[0]
+        # Build DataFrame
+        feature_values = [
+            age, sex, cp, resting_bp, chol,
+            fasting_bs, ecg, max_hr, angina,
+            oldpeak, slope
+        ]
+        X_df = pd.DataFrame([feature_values], columns=FEATURE_COLUMNS)
 
-            prediction = {
-                'class': int(pred_class),
-                'probability': round(pred_prob, 3)
-            }
+        # Predict
+        pred_prob  = model.predict_proba(X_df)[0, 1]
+        pred_class = model.predict(X_df)[0]
 
-        except Exception as e:
-            prediction = {'error': str(e)}
+        prediction = {
+            'class': int(pred_class),
+            'probability': round(pred_prob, 3)
+        }
 
-    return render_template('index.html', prediction=prediction)
+        # If request came from HTML form → render template
+        return render_template("index.html", prediction=prediction)
 
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+# ---------------- RUN ---------------- #
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
