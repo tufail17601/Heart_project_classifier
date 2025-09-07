@@ -2,10 +2,11 @@ from flask import Flask, render_template, request, jsonify
 import pickle
 import numpy as np
 import pandas as pd
+import os
 
 app = Flask(__name__)
 
-# Mappings
+# ----------------- Mappings ----------------- #
 SEX_MAP    = {'M': 1, 'F': 0}
 CP_MAP     = {'TA': 0, 'ATA': 1, 'NAP': 2, 'ASY': 3}
 ECG_MAP    = {'Normal': 0, 'ST': 1, 'LVH': 2}
@@ -18,12 +19,11 @@ FEATURE_COLUMNS = [
     'Oldpeak', 'ST_Slope'
 ]
 
-# Load model
+# ----------------- Load Model ----------------- #
 with open('Heart_Project.pkl', 'rb') as f:
     model = pickle.load(f)
 
-# ---------------- ROUTES ---------------- #
-
+# ----------------- Routes ----------------- #
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -68,13 +68,13 @@ def predict():
             'probability': round(pred_prob, 3)
         }
 
-        # If request came from HTML form → render template
+        # Render result in same page
         return render_template("index.html", prediction=prediction)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-
-# ---------------- RUN ---------------- #
+# ----------------- Run ----------------- #
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    port = int(os.environ.get("PORT", 8080))  # ✅ Railway uses dynamic ports
+    app.run(host='0.0.0.0', port=port)
